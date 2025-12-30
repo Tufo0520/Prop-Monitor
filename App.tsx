@@ -1,30 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Account, GlobalConfig } from './types';
 import { loadAccounts, saveAccounts, loadConfig, saveConfig } from './services/storage';
 import { AccountCard } from './components/AccountCard';
 import { TrendingUp, Settings, Plus, Wallet, Trash } from './components/Icons';
 
 const App: React.FC = () => {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [config, setConfig] = useState<GlobalConfig>({ targetProfitThreshold: 150, required_days: 5 } as any);
+  // 使用函数式初始化，确保第一渲染时就拿到存储的数据
+  const [accounts, setAccounts] = useState<Account[]>(() => loadAccounts());
+  const [config, setConfig] = useState<GlobalConfig>(() => loadConfig());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Migration for old config property name if necessary
-  useEffect(() => {
-    const loadedConfig = loadConfig();
-    const normalizedConfig: GlobalConfig = {
-      targetProfitThreshold: loadedConfig.targetProfitThreshold ?? 150,
-      requiredDays: (loadedConfig as any).requiredDays ?? (loadedConfig as any).required_days ?? 5
-    };
-    setAccounts(loadAccounts());
-    setConfig(normalizedConfig);
-  }, []);
-
+  // 监听 accounts 变化并保存
   useEffect(() => {
     saveAccounts(accounts);
   }, [accounts]);
 
+  // 监听 config 变化并保存
   useEffect(() => {
     saveConfig(config);
   }, [config]);
@@ -47,14 +39,13 @@ const App: React.FC = () => {
   };
 
   const deleteAccount = (id: string) => {
-    if (confirm('Delete this account and all its history?')) {
+    if (window.confirm('Delete this account and all its history?')) {
       setAccounts(accounts.filter(acc => acc.id !== id));
     }
   };
 
   const clearAllData = () => {
-    if (confirm('DANGER: Clear all data and reset system?')) {
-      setAccounts([]);
+    if (window.confirm('DANGER: Clear all data and reset system?')) {
       localStorage.clear();
       window.location.reload();
     }

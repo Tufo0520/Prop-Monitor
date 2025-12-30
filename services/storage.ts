@@ -5,8 +5,13 @@ const ACCOUNTS_KEY = 'payout_monitor_accounts';
 const CONFIG_KEY = 'payout_monitor_config';
 
 export const loadAccounts = (): Account[] => {
-  const data = localStorage.getItem(ACCOUNTS_KEY);
-  return data ? JSON.parse(data) : [];
+  try {
+    const data = localStorage.getItem(ACCOUNTS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.error("Failed to load accounts", e);
+    return [];
+  }
 };
 
 export const saveAccounts = (accounts: Account[]) => {
@@ -14,8 +19,17 @@ export const saveAccounts = (accounts: Account[]) => {
 };
 
 export const loadConfig = (): GlobalConfig => {
-  const data = localStorage.getItem(CONFIG_KEY);
-  return data ? JSON.parse(data) : { targetProfitThreshold: 150, requiredDays: 5 };
+  try {
+    const data = localStorage.getItem(CONFIG_KEY);
+    const parsed = data ? JSON.parse(data) : { targetProfitThreshold: 150, requiredDays: 5 };
+    // 自动兼容旧版本的 required_days 字段
+    return {
+      targetProfitThreshold: parsed.targetProfitThreshold ?? 150,
+      requiredDays: parsed.requiredDays ?? (parsed as any).required_days ?? 5
+    };
+  } catch (e) {
+    return { targetProfitThreshold: 150, requiredDays: 5 };
+  }
 };
 
 export const saveConfig = (config: GlobalConfig) => {

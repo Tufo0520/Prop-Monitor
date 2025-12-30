@@ -89,8 +89,12 @@ export const AccountCard: React.FC<Props> = ({ account, config, onUpdate, onDele
         </div>
         
         <button 
-          onClick={() => onDelete(account.id)}
-          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(account.id);
+          }}
+          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all lg:opacity-0 group-hover:opacity-100 active:scale-90"
+          title="Delete Account"
         >
           <Trash className="w-5 h-5" />
         </button>
