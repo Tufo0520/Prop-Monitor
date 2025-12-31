@@ -7,38 +7,51 @@ export const calculateStatus = (acc: Account, config: GlobalConfig): AccountStat
   // 1. Qualified Days Statistics
   const qualifiedDays = dailyProfits.filter(p => p >= config.targetProfitThreshold).length;
   
-  // 2. Drawdown Check (Simplified logic from source)
+  // 2. Comprehensive Risk Check
   let isBlown = false;
-  if (historyPayouts.length === 0) {
-    if (balance <= -2000) isBlown = true;
-  } else {
-    if (balance <= 0) isBlown = true;
-  }
-  
-  // 3. Payout Eligibility Determination
-  let canPayout = false;
   let reason = "";
+
+  // --- Rule 1: Drawdown / Liquidation Limit (Two-Stage) ---
+  const hasPayouts = historyPayouts.length > 0;
   
-  if (isBlown) {
-    reason = "Account Blown (爆仓)";
-  } else if (historyPayouts.length === 0) {
-    if (qualifiedDays >= config.requiredDays) {
-      canPayout = true;
-      reason = "First Payout Ready";
-    } else {
-      reason = `Need ${config.requiredDays - qualifiedDays} more qualified days`;
+  if (!hasPayouts) {
+    // Stage 1: Before any payout, use Max Drawdown setting
+    if (balance <= -config.maxDrawdown) {
+      isBlown = true;
+      reason = `Drawdown Limit Hit ($${balance.toLocaleString()})`;
     }
   } else {
-    const lastPayout = historyPayouts[historyPayouts.length - 1];
-    const lastPayoutBal = lastPayout.postBalance;
-    
-    if (qualifiedDays >= config.requiredDays && balance > lastPayoutBal) {
-      canPayout = true;
-      reason = "Subsequent Payout Ready";
-    } else if (balance <= lastPayoutBal) {
-      reason = "Balance must exceed post-payout level";
+    // Stage 2: After first payout, account blows if balance hits liquidation level
+    if (balance <= config.postPayoutLiquidationLevel) {
+      isBlown = true;
+      reason = `Liquidated at $${config.postPayoutLiquidationLevel}`;
+    }
+  }
+  
+  // 3. Payout Eligibility Determination (if not blown)
+  let canPayout = false;
+  
+  if (!isBlown) {
+    if (historyPayouts.length === 0) {
+      if (qualifiedDays >= config.requiredDays && balance > 0) {
+        canPayout = true;
+        reason = "First Payout Ready";
+      } else {
+        reason = `Need ${config.requiredDays - qualifiedDays} more qualified days`;
+      }
     } else {
-      reason = `Need ${config.requiredDays - qualifiedDays} more qualified days`;
+      const lastPayout = historyPayouts[historyPayouts.length - 1];
+      const lastPayoutBal = lastPayout.postBalance;
+      
+      // Subsequent payout logic
+      if (qualifiedDays >= config.requiredDays && balance > lastPayoutBal) {
+        canPayout = true;
+        reason = "Subsequent Payout Ready";
+      } else if (balance <= lastPayoutBal) {
+        reason = "Growth required since last payout";
+      } else {
+        reason = `Need ${config.requiredDays - qualifiedDays} more qualified days`;
+      }
     }
   }
   

@@ -21,14 +21,31 @@ export const saveAccounts = (accounts: Account[]) => {
 export const loadConfig = (): GlobalConfig => {
   try {
     const data = localStorage.getItem(CONFIG_KEY);
-    const parsed = data ? JSON.parse(data) : { targetProfitThreshold: 150, requiredDays: 5 };
-    // 自动兼容旧版本的 required_days 字段
+    const defaultVal: GlobalConfig = { 
+      targetProfitThreshold: 150, 
+      requiredDays: 5,
+      maxDrawdown: 2000,
+      postPayoutLiquidationLevel: 0,
+      subsequentPayoutRatio: 50
+    };
+    if (!data) return defaultVal;
+    
+    const parsed = JSON.parse(data);
     return {
-      targetProfitThreshold: parsed.targetProfitThreshold ?? 150,
-      requiredDays: parsed.requiredDays ?? (parsed as any).required_days ?? 5
+      targetProfitThreshold: parsed.targetProfitThreshold ?? defaultVal.targetProfitThreshold,
+      requiredDays: parsed.requiredDays ?? defaultVal.requiredDays,
+      maxDrawdown: parsed.maxDrawdown ?? defaultVal.maxDrawdown,
+      postPayoutLiquidationLevel: parsed.postPayoutLiquidationLevel ?? defaultVal.postPayoutLiquidationLevel,
+      subsequentPayoutRatio: parsed.subsequentPayoutRatio ?? defaultVal.subsequentPayoutRatio
     };
   } catch (e) {
-    return { targetProfitThreshold: 150, requiredDays: 5 };
+    return { 
+      targetProfitThreshold: 150, 
+      requiredDays: 5, 
+      maxDrawdown: 2000,
+      postPayoutLiquidationLevel: 0,
+      subsequentPayoutRatio: 50
+    };
   }
 };
 

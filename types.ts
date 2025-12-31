@@ -19,6 +19,9 @@ export interface Account {
 export interface GlobalConfig {
   targetProfitThreshold: number;
   requiredDays: number;
+  maxDrawdown: number;
+  postPayoutLiquidationLevel: number;
+  subsequentPayoutRatio: number;
 }
 
 export interface AccountStatus {
